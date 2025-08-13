@@ -27,26 +27,24 @@ class N8nWebhookClient:
                 'stream': True,
                 'timeout': timeout
             }
-            
+
             with requests.request(method.upper(), **request_kwargs) as response:
                 response.raise_for_status()
+                cnt = 0
                 
-                for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
-                    if chunk:
-                        parsed_chunk = None
-                        try:
-                            parsed_chunk = json.loads(chunk)
-                        except json.JSONDecodeError:
-                            parsed_chunk = chunk
-                        
-                        # Call the callback if provided
-                        if chunk_callback:
-                            chunk_callback(parsed_chunk)
-                        
+                for chunk in response.iter_lines(decode_unicode=True, delimiter="\n"):
+                    buffer = chunk
+                    try:
+                        parsed_chunk = json.loads(chunk)
+                        print(f"Received chunk {cnt}: {chunk}")
                         yield parsed_chunk
                         
+                        cnt += 1
+                    except json.JSONDecodeError:
+                        raise
+
         except requests.RequestException as e:
-            print(f"Error connecting to webhook: {e}", file=sys.stderr)
+            print(f"Error connecting to webhook: {e}")
             raise
 
 
@@ -68,21 +66,9 @@ if __name__ == "__main__":
         print(f"Connecting to {args.url} using {args.method}...")
         
         for chunk in client.stream_response(method=args.method, data=data):
-            print(f"Received chunk: {chunk}")
-            if type(chunk) == str:
-                try:
-                    chunk = json.loads(chunk)
-                    print(chunk.content)
-                except json.JSONDecodeError as e:
-                    print(f"Failed to decode JSON: {chunk}. {e}")
-
-            # if isinstance(chunk, dict):
-            #     # print(json.dumps(chunk, indent=2))
-            #     if hasattr(chunk, 'type') and chunk.type not in ('begin', 'end'):
-            #         print(chunk.content)
-            # else:
-            #     print(chunk)
+            if hasattr(chunk, 'type') and chunk.type not in ('begin', 'end'):
+                print(chunk.content)
     except KeyboardInterrupt:
         print("\nClient stopped by user")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}\n")
