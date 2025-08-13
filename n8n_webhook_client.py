@@ -24,7 +24,7 @@ class N8nWebhookClient:
             request_kwargs = {
                 'url': self.webhook_url,
                 'headers': self.headers,
-                'stream': True,
+                'stream': False,
                 'timeout': timeout
             }
 
@@ -32,16 +32,19 @@ class N8nWebhookClient:
                 response.raise_for_status()
                 cnt = 0
                 
-                for chunk in response.iter_lines(decode_unicode=True, delimiter="\n"):
-                    buffer = chunk
-                    try:
-                        parsed_chunk = json.loads(chunk)
-                        print(f"Received chunk {cnt}: {chunk}")
-                        yield parsed_chunk
+                from pprint import pprint
+                for chunk in response.iter_content(decode_unicode=True):
+                    print(f"Chunk {cnt}: ")
+                    pprint(chunk)
+                    # try:
+                    #     parsed_chunk = json.loads(chunk)
+                    #     print(f"Received chunk {cnt}: {chunk}")
+                    #     yield parsed_chunk
                         
-                        cnt += 1
-                    except json.JSONDecodeError:
-                        raise
+                    #     cnt += 1
+                    # except json.JSONDecodeError:
+                    #     raise
+                    cnt += 1
 
         except requests.RequestException as e:
             print(f"Error connecting to webhook: {e}")
@@ -66,8 +69,20 @@ if __name__ == "__main__":
         print(f"Connecting to {args.url} using {args.method}...")
         
         for chunk in client.stream_response(method=args.method, data=data):
-            if hasattr(chunk, 'type') and chunk.type not in ('begin', 'end'):
-                print(chunk.content)
+            chunk_type = chunk.get("type")
+            
+            if chunk_type == "begin":
+                sys.stdout.write("\nAI: ")
+                sys.stdout.flush()
+                
+            elif chunk_type == "item":
+                content = chunk.get("content", "")
+                sys.stdout.write(content)
+                sys.stdout.flush()
+                
+            elif chunk_type == "end":
+                sys.stdout.write("\n")
+                sys.stdout.flush()
     except KeyboardInterrupt:
         print("\nClient stopped by user")
     except Exception as e:
