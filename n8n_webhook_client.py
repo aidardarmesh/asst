@@ -66,8 +66,10 @@ class N8nWebhookClient:
 if __name__ == "__main__":
     WEBHOOK_URL_DEV = "https://adarmesh20.app.n8n.cloud/webhook-test/9dc4acd6-6523-46dc-a0ef-33b13f3d1d0d"
     WEBHOOK_URL_PROD = "https://adarmesh20.app.n8n.cloud/webhook/9dc4acd6-6523-46dc-a0ef-33b13f3d1d0d"
+    WEBHOOK_URL_ROUTER_DEV = "https://adarmesh20.app.n8n.cloud/webhook-test/34ee585f-90e5-4a26-a8bb-98c91179de15"
+    WEBHOOK_URL_ROUTER_PROD = "https://adarmesh20.app.n8n.cloud/webhook/34ee585f-90e5-4a26-a8bb-98c91179de15"
     
-    client = N8nWebhookClient(WEBHOOK_URL_PROD)
+    client = N8nWebhookClient(WEBHOOK_URL_ROUTER_DEV)
 
     while True:
         user_input = input("\nYou: ")
